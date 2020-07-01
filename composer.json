@@ -1,0 +1,20 @@
+{
+  "name": "qfsoft/alipaysdk",
+  "description": "支持Laravel 5.7+，支付宝APP支付的SDK",
+  "keywords": ["alipay", "laravel"],
+  "authors": [
+    {
+      "name": "qfsoft",
+      "email": "qfsoft@163.com"
+    }
+  ],
+  "require": {
+	"php": "^7.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "qfsoft\\Alipay\\": "src"
+    }
+  },
+  "license": "MIT"
+}
