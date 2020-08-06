@@ -83,7 +83,7 @@ class AopCertClient
     {
         $cert = file_get_contents($certPath);
         $ssl = openssl_x509_parse($cert);
-        $SN = md5(array2string(array_reverse($ssl['issuer'])) . $ssl['serialNumber']);
+        $SN = md5(\qfsoft\Alipay\array2string(array_reverse($ssl['issuer'])) . $ssl['serialNumber']);
         return $SN;
     }
 
@@ -105,10 +105,10 @@ class AopCertClient
             }
             if ($ssl[$i]['signatureTypeLN'] == "sha1WithRSAEncryption" || $ssl[$i]['signatureTypeLN'] == "sha256WithRSAEncryption") {
                 if ($SN == null) {
-                    $SN = md5(array2string(array_reverse($ssl[$i]['issuer'])) . $ssl[$i]['serialNumber']);
+                    $SN = md5(\qfsoft\Alipay\array2string(array_reverse($ssl[$i]['issuer'])) . $ssl[$i]['serialNumber']);
                 } else {
 
-                    $SN = $SN . "_" . md5(array2string(array_reverse($ssl[$i]['issuer'])) . $ssl[$i]['serialNumber']);
+                    $SN = $SN . "_" . md5(\qfsoft\Alipay\array2string(array_reverse($ssl[$i]['issuer'])) . $ssl[$i]['serialNumber']);
                 }
             }
         }
