@@ -9,10 +9,10 @@ namespace qfsoft\Alipay;
 
 function isTrusted($alipayCert, $rootCert)
 {
-    $alipayCerts = readPemCertChain($alipayCert);
-    $rootCerts = readPemCertChain($rootCert);
-    if (verifyCertChain($alipayCerts, $rootCerts)) {
-        return verifySignature($alipayCert, $rootCert);
+    $alipayCerts = \qfsoft\Alipay\readPemCertChain($alipayCert);
+    $rootCerts = \qfsoft\Alipay\readPemCertChain($rootCert);
+    if (\qfsoft\Alipay\verifyCertChain($alipayCerts, $rootCerts)) {
+        return \qfsoft\Alipay\verifySignature($alipayCert, $rootCert);
     } else {
         return false;
     }
@@ -75,10 +75,10 @@ function verifyCert($prev, $rootCerts)
     }
     $subjectMap = null;
     for ($i = 0; $i < count($rootCerts); $i++) {
-        $subjectDN = array2string($rootCerts[$i]['subject']);
+        $subjectDN = \qfsoft\Alipay\array2string($rootCerts[$i]['subject']);
         $subjectMap[$subjectDN] = $rootCerts[$i];
     }
-    $issuerDN = array2string(($prev['issuer']));
+    $issuerDN = \qfsoft\Alipay\array2string(($prev['issuer']));
     if (!array_key_exists($issuerDN, $subjectMap)) {
         echo "证书链验证失败";
         return false;
@@ -93,14 +93,14 @@ function verifyCert($prev, $rootCerts)
  */
 function verifyCertChain($alipayCerts, $rootCerts)
 {
-    $sorted = sortByDn($alipayCerts);
+    $sorted = \qfsoft\Alipay\sortByDn($alipayCerts);
     if (!$sorted) {
         echo "证书链验证失败：不是完整的证书链";
         return false;
     }
     //先验证第一个证书是不是信任库中证书签发的
     $prev = $alipayCerts[0];
-    $firstOK = verifyCert($prev, $rootCerts);
+    $firstOK = \qfsoft\Alipay\verifyCert($prev, $rootCerts);
     $length = count($alipayCerts);
     if (!$firstOK || $length == 1) {
         return $firstOK;
@@ -133,20 +133,20 @@ function sortByDn(&$certs)
     $subjectMap = null;
     $issuerMap = null;
     for ($i = 0; $i < count($certs); $i++) {
-        if (isSelfSigned($certs[$i])) {
+        if (\qfsoft\Alipay\isSelfSigned($certs[$i])) {
             if ($hasSelfSignedCert) {
                 return false;
             }
             $hasSelfSignedCert = true;
         }
-        $subjectDN = array2string($certs[$i]['subject']);
-        $issuerDN = array2string(($certs[$i]['issuer']));
+        $subjectDN = \qfsoft\Alipay\array2string($certs[$i]['subject']);
+        $issuerDN = \qfsoft\Alipay\array2string(($certs[$i]['issuer']));
         $subjectMap[$subjectDN] = $certs[$i];
         $issuerMap[$issuerDN] = $certs[$i];
     }
     $certChain = null;
-    addressingUp($subjectMap, $certChain, $certs[0]);
-    addressingDown($issuerMap, $certChain, $certs[0]);
+    \qfsoft\Alipay\addressingUp($subjectMap, $certChain, $certs[0]);
+    \qfsoft\Alipay\addressingDown($issuerMap, $certChain, $certs[0]);
 
     //说明证书链不完整
     if (count($certs) != count($certChain)) {
@@ -165,8 +165,8 @@ function sortByDn(&$certs)
  */
 function isSelfSigned($cert)
 {
-    $subjectDN = array2string($cert['subject']);
-    $issuerDN = array2string($cert['issuer']);
+    $subjectDN = \qfsoft\Alipay\array2string($cert['subject']);
+    $issuerDN = \qfsoft\Alipay\array2string($cert['issuer']);
     return ($subjectDN == $issuerDN);
 }
 
@@ -191,15 +191,15 @@ function array2string($array)
 function addressingUp($subjectMap, &$certChain, $current)
 {
     $certChain[] = $current;
-    if (isSelfSigned($current)) {
+    if (\qfsoft\Alipay\isSelfSigned($current)) {
         return;
     }
-    $issuerDN = array2string($current['issuer']);
+    $issuerDN = \qfsoft\Alipay\array2string($current['issuer']);
 
     if (!array_key_exists($issuerDN, $subjectMap)) {
         return;
     }
-    addressingUp($subjectMap, $certChain, $subjectMap[$issuerDN]);
+    \qfsoft\Alipay\addressingUp($subjectMap, $certChain, $subjectMap[$issuerDN]);
 }
 
 /**
@@ -210,12 +210,12 @@ function addressingUp($subjectMap, &$certChain, $current)
  */
 function addressingDown($issuerMap, &$certChain, $current)
 {
-    $subjectDN = array2string($current['subject']);
+    $subjectDN = \qfsoft\Alipay\array2string($current['subject']);
     if (!array_key_exists($subjectDN, $issuerMap)) {
         return $certChain;
     }
     $certChain[] = $issuerMap[$subjectDN];
-    addressingDown($issuerMap, $certChain, $issuerMap[$subjectDN]);
+    \qfsoft\Alipay\addressingDown($issuerMap, $certChain, $issuerMap[$subjectDN]);
 }
 
 
@@ -412,12 +412,12 @@ function isCertSigner($certPem = null, $caCertPem = null)
         return false;
     }
     // Convert the cert to der for feeding to extractSignature.
-    $certDer = pemToDer($certPem);
+    $certDer = \qfsoft\Alipay\pemToDer($certPem);
     if (!is_string($certDer)) {
         die('invalid certPem');
     }
     // Grab the encrypted signature from the der encoded cert.
-    $encryptedSig = extractSignature($certDer);
+    $encryptedSig = \qfsoft\Alipay\extractSignature($certDer);
     if (!is_string($encryptedSig)) {
         die('Failed to extract encrypted signature from certPem.');
     }
@@ -439,14 +439,14 @@ function isCertSigner($certPem = null, $caCertPem = null)
     // Now we need what was originally hashed by the issuer, which is
     // the original DER encoded certificate without the issuer and
     // signature information.
-    $origCert = stripSignerAsn($certDer);
+    $origCert = \qfsoft\Alipay\stripSignerAsn($certDer);
     if ($origCert === false) {
         die('Failed to extract unsigned cert.');
     }
     // Get the oid of the signature hash algorithm, which is required
     // to generate our own hash of the original cert.  This hash is
     // what will be compared to the issuers hash.
-    $oid = getSignatureAlgorithmOid($decryptedSig);
+    $oid = \qfsoft\Alipay\getSignatureAlgorithmOid($decryptedSig);
     if ($oid === false) {
         die('Failed to determine the signature algorithm.');
     }
@@ -480,7 +480,7 @@ function isCertSigner($certPem = null, $caCertPem = null)
             break;
     }
     // Get the issuer generated hash from the decrypted signature.
-    $decryptedHash = getSignatureHash($decryptedSig);
+    $decryptedHash = \qfsoft\Alipay\getSignatureHash($decryptedSig);
     // Ok, hash the original unsigned cert with the same algorithm
     // and if it matches $decryptedHash we have a winner.
     $certHash = hash($algo, $origCert);
