@@ -9,32 +9,31 @@ class AopCertification
      * @param $rootCert 支付宝根证书
      */
 
-    function isTrusted($alipayCert, $rootCert)
+    public static function isTrusted($alipayCert, $rootCert)
     {
-        $alipayCerts = readPemCertChain($alipayCert);
-        $rootCerts = readPemCertChain($rootCert);
-        if (verifyCertChain($alipayCerts, $rootCerts)) {
-            return verifySignature($alipayCert, $rootCert);
+        $alipayCerts = self::readPemCertChain($alipayCert);
+        $rootCerts = self::readPemCertChain($rootCert);
+        if (self::verifyCertChain($alipayCerts, $rootCerts)) {
+            return self::verifySignature($alipayCert, $rootCert);
         } else {
             return false;
         }
-
     }
 
-    function verifySignature($alipayCert, $rootCert)
+    public static function verifySignature($alipayCert, $rootCert)
     {
         $alipayCertArray = explode("-----END CERTIFICATE-----", $alipayCert);
         $rootCertArray = explode("-----END CERTIFICATE-----", $rootCert);
         $length = count($rootCertArray) - 1;
-        $checkSign = isCertSigner($alipayCertArray[0] . "-----END CERTIFICATE-----", $alipayCertArray[1] . "-----END CERTIFICATE-----");
+        $checkSign = self::isCertSigner($alipayCertArray[0] . "-----END CERTIFICATE-----", $alipayCertArray[1] . "-----END CERTIFICATE-----");
         if (!$checkSign) {
-            $checkSign = isCertSigner($alipayCertArray[1] . "-----END CERTIFICATE-----", $alipayCertArray[0] . "-----END CERTIFICATE-----");
+            $checkSign = self::isCertSigner($alipayCertArray[1] . "-----END CERTIFICATE-----", $alipayCertArray[0] . "-----END CERTIFICATE-----");
             if ($checkSign) {
                 $issuer = openssl_x509_parse($alipayCertArray[0] . "-----END CERTIFICATE-----")['issuer'];
                 for ($i = 0; $i < $length; $i++) {
                     $subject = openssl_x509_parse($rootCertArray[$i] . "-----END CERTIFICATE-----")['subject'];
                     if ($issuer == $subject) {
-                        isCertSigner($alipayCertArray[0] . "-----END CERTIFICATE-----", $rootCertArray[$i] . $rootCertArray);
+                        self::isCertSigner($alipayCertArray[0] . "-----END CERTIFICATE-----", $rootCertArray[$i] . $rootCertArray);
                         return $checkSign;
                     }
                 }
@@ -46,7 +45,7 @@ class AopCertification
             for ($i = 0; $i < $length; $i++) {
                 $subject = openssl_x509_parse($rootCertArray[$i] . "-----END CERTIFICATE-----")['subject'];
                 if ($issuer == $subject) {
-                    $checkSign = isCertSigner($alipayCertArray[1] . "-----END CERTIFICATE-----", $rootCertArray[$i] . "-----END CERTIFICATE-----");
+                    $checkSign = self::isCertSigner($alipayCertArray[1] . "-----END CERTIFICATE-----", $rootCertArray[$i] . "-----END CERTIFICATE-----");
                     return $checkSign;
                 }
             }
@@ -54,7 +53,7 @@ class AopCertification
         }
     }
 
-    function readPemCertChain($cert)
+    public static function readPemCertChain($cert)
     {
         $array = explode("-----END CERTIFICATE-----", $cert);
         $certs[] = null;
@@ -64,7 +63,7 @@ class AopCertification
         return $certs;
     }
 
-    function verifyCert($prev, $rootCerts)
+    public static function verifyCert($prev, $rootCerts)
     {
         $nowTime = time();
         if ($nowTime < $prev['validFrom_time_t']) {
@@ -77,10 +76,10 @@ class AopCertification
         }
         $subjectMap = null;
         for ($i = 0; $i < count($rootCerts); $i++) {
-            $subjectDN = array2string($rootCerts[$i]['subject']);
+            $subjectDN = self::array2string($rootCerts[$i]['subject']);
             $subjectMap[$subjectDN] = $rootCerts[$i];
         }
-        $issuerDN = array2string(($prev['issuer']));
+        $issuerDN = self::array2string(($prev['issuer']));
         if (!array_key_exists($issuerDN, $subjectMap)) {
             echo "证书链验证失败";
             return false;
@@ -93,16 +92,16 @@ class AopCertification
      * @param $alipayCerts 目标验证证书列表
      * @param $rootCerts 可信根证书列表
      */
-    function verifyCertChain($alipayCerts, $rootCerts)
+    public static function verifyCertChain($alipayCerts, $rootCerts)
     {
-        $sorted = sortByDn($alipayCerts);
+        $sorted = self::sortByDn($alipayCerts);
         if (!$sorted) {
             echo "证书链验证失败：不是完整的证书链";
             return false;
         }
         //先验证第一个证书是不是信任库中证书签发的
         $prev = $alipayCerts[0];
-        $firstOK = verifyCert($prev, $rootCerts);
+        $firstOK = self::verifyCert($prev, $rootCerts);
         $length = count($alipayCerts);
         if (!$firstOK || $length == 1) {
             return $firstOK;
@@ -128,27 +127,27 @@ class AopCertification
      * 将证书链按照完整的签发顺序进行排序，排序后证书链为：[issuerA, subjectA]-[issuerA, subjectB]-[issuerB, subjectC]-[issuerC, subjectD]...
      * @param $certs 证书链
      */
-    function sortByDn(&$certs)
+    public static function sortByDn(&$certs)
     {
         //是否包含自签名证书
         $hasSelfSignedCert = false;
         $subjectMap = null;
         $issuerMap = null;
         for ($i = 0; $i < count($certs); $i++) {
-            if (isSelfSigned($certs[$i])) {
+            if (self::isSelfSigned($certs[$i])) {
                 if ($hasSelfSignedCert) {
                     return false;
                 }
                 $hasSelfSignedCert = true;
             }
-            $subjectDN = array2string($certs[$i]['subject']);
-            $issuerDN = array2string(($certs[$i]['issuer']));
+            $subjectDN = self::array2string($certs[$i]['subject']);
+            $issuerDN = self::array2string(($certs[$i]['issuer']));
             $subjectMap[$subjectDN] = $certs[$i];
             $issuerMap[$issuerDN] = $certs[$i];
         }
         $certChain = null;
-        addressingUp($subjectMap, $certChain, $certs[0]);
-        addressingDown($issuerMap, $certChain, $certs[0]);
+        self::addressingUp($subjectMap, $certChain, $certs[0]);
+        self::addressingDown($issuerMap, $certChain, $certs[0]);
 
         //说明证书链不完整
         if (count($certs) != count($certChain)) {
@@ -165,15 +164,15 @@ class AopCertification
      * 验证证书是否是自签发的
      * @param $cert 目标证书
      */
-    function isSelfSigned($cert)
+    public static function isSelfSigned($cert)
     {
-        $subjectDN = array2string($cert['subject']);
-        $issuerDN = array2string($cert['issuer']);
+        $subjectDN = self::array2string($cert['subject']);
+        $issuerDN = self::array2string($cert['issuer']);
         return ($subjectDN == $issuerDN);
     }
 
 
-    function array2string($array)
+    public static function array2string($array)
     {
         $string = [];
         if ($array && is_array($array)) {
@@ -190,18 +189,18 @@ class AopCertification
      * @param $certChain 证书链
      * @param $current 当前需要插入证书链的证书，include
      */
-    function addressingUp($subjectMap, &$certChain, $current)
+    public static function addressingUp($subjectMap, &$certChain, $current)
     {
         $certChain[] = $current;
-        if (isSelfSigned($current)) {
+        if (self::isSelfSigned($current)) {
             return;
         }
-        $issuerDN = array2string($current['issuer']);
+        $issuerDN = self::array2string($current['issuer']);
 
         if (!array_key_exists($issuerDN, $subjectMap)) {
             return;
         }
-        addressingUp($subjectMap, $certChain, $subjectMap[$issuerDN]);
+        self::addressingUp($subjectMap, $certChain, $subjectMap[$issuerDN]);
     }
 
     /**
@@ -210,14 +209,14 @@ class AopCertification
      * @param $certChain 证书链
      * @param $current 当前需要插入证书链的证书，exclude
      */
-    function addressingDown($issuerMap, &$certChain, $current)
+    public static function addressingDown($issuerMap, &$certChain, $current)
     {
-        $subjectDN = array2string($current['subject']);
+        $subjectDN = self::array2string($current['subject']);
         if (!array_key_exists($subjectDN, $issuerMap)) {
             return $certChain;
         }
         $certChain[] = $issuerMap[$subjectDN];
-        addressingDown($issuerMap, $certChain, $issuerMap[$subjectDN]);
+        self::addressingDown($issuerMap, $certChain, $issuerMap[$subjectDN]);
     }
 
 
@@ -231,7 +230,7 @@ class AopCertification
      * @return string on success
      * @return bool false on failures
      */
-    function extractSignature($der = false)
+    public static function extractSignature($der = false)
     {
         if (strlen($der) < 5) {
             return false;
@@ -290,7 +289,7 @@ class AopCertification
      * @return bool false on failures
      * @return string oid
      */
-    function getSignatureAlgorithmOid($der = null)
+    public static function getSignatureAlgorithmOid($der = null)
     {
         // Validate this is the der we need...
         if (!is_string($der) or strlen($der) < 5) {
@@ -350,7 +349,7 @@ class AopCertification
      * @return bool false on failures
      * @return string hash
      */
-    function getSignatureHash($der = null)
+    public static function getSignatureHash($der = null)
     {
         // Validate this is the der we need...
         if (!is_string($der) or strlen($der) < 5) {
@@ -399,7 +398,7 @@ class AopCertification
      * @param string $caCert - PEM encoded cert that possibly signed $cert
      * @return bool
      */
-    function isCertSigner($certPem = null, $caCertPem = null)
+    public static function isCertSigner($certPem = null, $caCertPem = null)
     {
         if (!function_exists('openssl_pkey_get_public')) {
             die('Need the openssl_pkey_get_public() function.');
@@ -414,12 +413,12 @@ class AopCertification
             return false;
         }
         // Convert the cert to der for feeding to extractSignature.
-        $certDer = pemToDer($certPem);
+        $certDer = self::pemToDer($certPem);
         if (!is_string($certDer)) {
             die('invalid certPem');
         }
         // Grab the encrypted signature from the der encoded cert.
-        $encryptedSig = extractSignature($certDer);
+        $encryptedSig = self::extractSignature($certDer);
         if (!is_string($encryptedSig)) {
             die('Failed to extract encrypted signature from certPem.');
         }
@@ -441,14 +440,14 @@ class AopCertification
         // Now we need what was originally hashed by the issuer, which is
         // the original DER encoded certificate without the issuer and
         // signature information.
-        $origCert = stripSignerAsn($certDer);
+        $origCert = self::stripSignerAsn($certDer);
         if ($origCert === false) {
             die('Failed to extract unsigned cert.');
         }
         // Get the oid of the signature hash algorithm, which is required
         // to generate our own hash of the original cert.  This hash is
         // what will be compared to the issuers hash.
-        $oid = getSignatureAlgorithmOid($decryptedSig);
+        $oid = self::getSignatureAlgorithmOid($decryptedSig);
         if ($oid === false) {
             die('Failed to determine the signature algorithm.');
         }
@@ -482,7 +481,7 @@ class AopCertification
                 break;
         }
         // Get the issuer generated hash from the decrypted signature.
-        $decryptedHash = getSignatureHash($decryptedSig);
+        $decryptedHash = self::getSignatureHash($decryptedSig);
         // Ok, hash the original unsigned cert with the same algorithm
         // and if it matches $decryptedHash we have a winner.
         $certHash = hash($algo, $origCert);
@@ -494,7 +493,7 @@ class AopCertification
      * @return string $derEncoded on success
      * @return bool false on failures
      */
-    function pemToDer($pem = null)
+    public static function pemToDer($pem = null)
     {
         if (!is_string($pem)) {
             return false;
@@ -512,7 +511,7 @@ class AopCertification
      * @return string $der on success
      * @return bool false on failures.
      */
-    function stripSignerAsn($der = null)
+    public static function stripSignerAsn($der = null)
     {
         if (!is_string($der) or strlen($der) < 8) {
             return false;
