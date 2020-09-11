@@ -1,5 +1,5 @@
 <?php
-namespace qfsoft\Alipay\request;
+namespace alipaysdk\request;
 
 /**
  * ALIPAY API: alipay.trade.app.pay request
