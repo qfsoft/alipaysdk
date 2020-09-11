@@ -1,5 +1,5 @@
 <?php
-namespace qfsoft\Alipay;
+namespace alipaysdk;
 
 class EncryptParseItem
 {
