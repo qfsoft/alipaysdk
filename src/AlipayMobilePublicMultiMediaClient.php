@@ -1,5 +1,5 @@
 <?php
-namespace qfsoft\Alipay;
+namespace alipaysdk;
 
 /**
  * 多媒体文件客户端
