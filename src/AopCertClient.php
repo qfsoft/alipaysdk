@@ -127,7 +127,9 @@ class AopCertClient
         for ($i = 1; $i <= $len; $i++) {
             $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
         }
-        return round($dec,0);
+        //这里注释掉，直接返回精度
+//        return round($dec,0);
+        return $dec;
     }
 
     /**
